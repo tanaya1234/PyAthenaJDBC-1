@@ -177,18 +177,18 @@ class Cursor(object):
                 self._update_count = -1
             else:
                 self._update_count = self._statement.getUpdatecount()
-            query_execution = self._query_execution()
+            # query_execution = self._query_execution()
 
-            result_conf = query_execution.getResultConfiguration()
-            self._output_location = result_conf.getOutputLocation()
+            # result_conf = query_execution.getResultConfiguration()
+            # self._output_location = result_conf.getOutputLocation()
 
-            status = query_execution.getStatus()
-            self._completion_date_time = to_datetime(status.getCompletionDateTime())
-            self._submission_date_time = to_datetime(status.getSubmissionDateTime())
+            # status = query_execution.getStatus()
+            # self._completion_date_time = to_datetime(status.getCompletionDateTime())
+            # self._submission_date_time = to_datetime(status.getSubmissionDateTime())
 
-            statistics = query_execution.getStatistics()
-            self._data_scanned_in_bytes = statistics.getDataScannedInBytes()
-            self._execution_time_in_millis = statistics.getEngineExecutionTimeInMillis()
+            # statistics = query_execution.getStatistics()
+            # self._data_scanned_in_bytes = statistics.getDataScannedInBytes()
+            # self._execution_time_in_millis = statistics.getEngineExecutionTimeInMillis()
         except Exception as e:
             _logger.exception('Failed to execute query.')
             raise_from(DatabaseError(unwrap_exception(e)), e)
@@ -204,18 +204,12 @@ class Cursor(object):
         self._statement.cancel()
 
     def _rows(self):
-        for field in self._result_set.__javaclass__.getDeclaredFields():
-            if field.name == 'row':
-                field.setAccessible(True)
-                return field.get(self._result_set).get()
-        raise InternalError('Row field not found.')
+        return [self._result_set.getString(idx+1)
+                for idx in range(self._meta_data.getColumnCount())]
 
     def _columns(self):
-        for field in self._meta_data.__javaclass__.getDeclaredFields():
-            if field.name == 'columnInfo':
-                field.setAccessible(True)
-                return field.get(self._meta_data).toArray()
-        raise InternalError('ColumnInfo field not found.')
+        return [self._meta_data.getColumnType(idx+1)
+                for idx in range(self._meta_data.getColumnCount())]
 
     @attach_thread_to_jvm
     def _fetch(self):
@@ -228,7 +222,7 @@ class Cursor(object):
             return None
         self._rownumber += 1
         return tuple([
-            self._converter.convert(column.getSQLColumnType(), row.getVarCharValue())
+            self._converter.convert(column, row)
             for column, row in zip(self._columns(), self._rows())
         ])
 

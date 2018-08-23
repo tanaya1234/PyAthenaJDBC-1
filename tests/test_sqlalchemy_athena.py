@@ -7,8 +7,8 @@ from datetime import date, datetime
 from decimal import Decimal
 
 import sqlalchemy
-from future.utils import PY2
-from sqlalchemy.engine import create_engine
+# from future.utils import PY2
+# from sqlalchemy.engine import create_engine
 from sqlalchemy.exc import NoSuchTableError
 from sqlalchemy.sql import expression
 from sqlalchemy.sql.schema import Column, MetaData, Table
@@ -18,10 +18,10 @@ from sqlalchemy.sql.sqltypes import (BIGINT, BINARY, BOOLEAN, DATE, DECIMAL,
 from tests.conftest import ENV, SCHEMA
 from tests.util import with_engine
 
-if PY2:
-    from urllib import quote_plus
-else:
-    from urllib.parse import quote_plus
+# if PY2:
+#     from urllib import quote_plus
+# else:
+#     from urllib.parse import quote_plus
 
 
 class TestSQLAlchemyAthena(unittest.TestCase):
@@ -33,11 +33,8 @@ class TestSQLAlchemyAthena(unittest.TestCase):
     """
 
     def create_engine(self):
-        conn_str = 'awsathena+jdbc://athena.{region_name}.amazonaws.com:443/' + \
-                   '{schema_name}?s3_staging_dir={s3_staging_dir}'
-        return create_engine(conn_str.format(region_name=ENV.region_name,
-                                             schema_name=SCHEMA,
-                                             s3_staging_dir=quote_plus(ENV.s3_staging_dir)))
+        conn_str = 'jdbc:qubole//presto/presto/{schema_name}'
+        return create_engine(conn_str.format(schema_name=SCHEMA))
 
     @with_engine
     def test_basic_query(self, engine, conn):

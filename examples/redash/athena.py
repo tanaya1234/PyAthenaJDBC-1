@@ -96,11 +96,16 @@ class Athena(BaseQueryRunner):
         return schema.values()
 
     def run_query(self, query, user):
-        conn = connect(s3_staging_dir=self.configuration['s3_staging_dir'],
-                       region_name=self.configuration['region'],
-                       access_key=self.configuration.get('aws_access_key', None),
-                       secret_key=self.configuration.get('aws_secret_key', None),
-                       schema_name=self.configuration.get('schema', 'default'),
+        # conn = connect(s3_staging_dir=self.configuration['s3_staging_dir'],
+        #                region_name=self.configuration['region'],
+        #                access_key=self.configuration.get('aws_access_key', None),
+        #                secret_key=self.configuration.get('aws_secret_key', None),
+        #                schema_name=self.configuration.get('schema', 'default'),
+        #                jvm_path=self.configuration.get('jvm_path', None),
+        #                jvm_options=self.configuration.get['jvm_options'].split(',')
+        #                if self.configuration.get('jvm_options', None) else None)
+        conn = connect(user=self.configuration['user'],
+                       api_token=self.configuration['api_token'],
                        jvm_path=self.configuration.get('jvm_path', None),
                        jvm_options=self.configuration.get['jvm_options'].split(',')
                        if self.configuration.get('jvm_options', None) else None)

@@ -22,53 +22,60 @@ class Connection(object):
 
     _ENV_S3_STAGING_DIR = 'AWS_ATHENA_S3_STAGING_DIR'
 
-    def __init__(self, s3_staging_dir=None, access_key=None, secret_key=None,
+    def __init__(self, user=None, api_token=None, schema_name='default',
                  region_name=None, schema_name='default', profile_name=None, credential_file=None,
                  jvm_path=None, jvm_options=None, converter=None, formatter=None,
                  driver_path=None, **driver_kwargs):
-        if s3_staging_dir:
-            self.s3_staging_dir = s3_staging_dir
-        else:
-            self.s3_staging_dir = os.getenv(self._ENV_S3_STAGING_DIR, None)
-        assert self.s3_staging_dir, 'Required argument `s3_staging_dir` not found.'
+        # if s3_staging_dir:
+        #     self.s3_staging_dir = s3_staging_dir
+        # else:
+        #     self.s3_staging_dir = os.getenv(self._ENV_S3_STAGING_DIR, None)
+        # assert self.s3_staging_dir, 'Required argument `s3_staging_dir` not found.'
         assert schema_name, 'Required argument `schema_name` not found.'
         self.schema_name = schema_name
 
-        if credential_file:
-            self.access_key = None
-            self.secret_key = None
-            self.token = None
-            self.profile_name = None
-            self.credential_file = credential_file
-            assert self.credential_file, 'Required argument `credential_file` not found.'
-            self.region_name = region_name
-            assert self.region_name, 'Required argument `region_name` not found.'
-        else:
-            import botocore.session
-            session = botocore.session.get_session()
-            if access_key and secret_key:
-                session.set_credentials(access_key, secret_key)
-            if profile_name:
-                session.set_config_variable('profile', profile_name)
-            if region_name:
-                session.set_config_variable('region', region_name)
-            credentials = session.get_credentials()
-            self.access_key = credentials.access_key
-            assert self.access_key, 'Required argument `access_key` not found.'
-            self.secret_key = credentials.secret_key
-            assert self.secret_key, 'Required argument `secret_key` not found.'
-            self.token = credentials.token
-            self.profile_name = session.profile
-            self.credential_file = None
-            self.region_name = session.get_config_variable('region')
-            assert self.region_name, 'Required argument `region_name` not found.'
+        # if credential_file:
+        #     self.access_key = None
+        #     self.secret_key = None
+        #     self.token = None
+        #     self.profile_name = None
+        #     self.credential_file = credential_file
+        #     assert self.credential_file, 'Required argument `credential_file` not found.'
+        #     self.region_name = region_name
+        #     assert self.region_name, 'Required argument `region_name` not found.'
+        # else:
+        #     import botocore.session
+        #     session = botocore.session.get_session()
+        #     if access_key and secret_key:
+        #         session.set_credentials(access_key, secret_key)
+        #     if profile_name:
+        #         session.set_config_variable('profile', profile_name)
+        #     if region_name:
+        #         session.set_config_variable('region', region_name)
+        #     credentials = session.get_credentials()
+        #     self.access_key = credentials.access_key
+        #     assert self.access_key, 'Required argument `access_key` not found.'
+        #     self.secret_key = credentials.secret_key
+        #     assert self.secret_key, 'Required argument `secret_key` not found.'
+        #     self.token = credentials.token
+        #     self.profile_name = session.profile
+        #     self.credential_file = None
+        #     self.region_name = session.get_config_variable('region')
+        #     assert self.region_name, 'Required argument `region_name` not found.'
 
+        assert schema_name, 'Required argument `schema_name` not found.'
+        self.schema_name = schema_name
+        assert user, 'Required argument `user` not found.'
+        self.user = user
+        assert api_token, 'Required argument `api_token` not found.'
+        self.api_token = api_token
+        
         self._start_jvm(jvm_path, jvm_options, driver_path)
 
         props = self._build_driver_args(**driver_kwargs)
         jpype.JClass(ATHENA_DRIVER_CLASS_NAME)
         self._jdbc_conn = jpype.java.sql.DriverManager.getConnection(
-            ATHENA_CONNECTION_STRING.format(region=self.region_name, schema=schema_name), props)
+            ATHENA_CONNECTION_STRING.format(schema=schema_name), user, api_token)
 
         self._converter = converter if converter else JDBCTypeConverter()
         self._formatter = formatter if formatter else ParameterFormatter()
@@ -99,26 +106,26 @@ class Connection(object):
 
     def _build_driver_args(self, **kwargs):
         props = jpype.java.util.Properties()
-        if self.credential_file:
-            props.setProperty('aws_credentials_provider_class',
-                              'com.amazonaws.athena.jdbc.shaded.' +
-                              'com.amazonaws.auth.PropertiesFileCredentialsProvider')
-            props.setProperty('aws_credentials_provider_arguments',
-                              self.credential_file)
-        elif self.profile_name:
-            props.setProperty('aws_credentials_provider_class',
-                              'com.amazonaws.athena.jdbc.shaded.' +
-                              'com.amazonaws.auth.profile.ProfileCredentialsProvider')
-            props.setProperty('aws_credentials_provider_arguments',
-                              self.profile_name)
-        elif self.token:
-            props.setProperty('aws_credentials_provider_class',
-                              'com.amazonaws.athena.jdbc.shaded.' +
-                              'com.amazonaws.auth.DefaultAWSCredentialsProviderChain')
-        else:
-            props.setProperty('user', self.access_key)
-            props.setProperty('password', self.secret_key)
-        props.setProperty('s3_staging_dir', self.s3_staging_dir)
+        # if self.credential_file:
+        #     props.setProperty('aws_credentials_provider_class',
+        #                       'com.amazonaws.athena.jdbc.shaded.' +
+        #                       'com.amazonaws.auth.PropertiesFileCredentialsProvider')
+        #     props.setProperty('aws_credentials_provider_arguments',
+        #                       self.credential_file)
+        # elif self.profile_name:
+        #     props.setProperty('aws_credentials_provider_class',
+        #                       'com.amazonaws.athena.jdbc.shaded.' +
+        #                       'com.amazonaws.auth.profile.ProfileCredentialsProvider')
+        #     props.setProperty('aws_credentials_provider_arguments',
+        #                       self.profile_name)
+        # elif self.token:
+        #     props.setProperty('aws_credentials_provider_class',
+        #                       'com.amazonaws.athena.jdbc.shaded.' +
+        #                       'com.amazonaws.auth.DefaultAWSCredentialsProviderChain')
+        # else:
+        #     props.setProperty('user', self.access_key)
+        #     props.setProperty('password', self.secret_key)
+        # props.setProperty('s3_staging_dir', self.s3_staging_dir)
         for k, v in iteritems(kwargs):
             if k and v:
                 props.setProperty(k, v)

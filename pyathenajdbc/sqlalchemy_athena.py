@@ -83,7 +83,7 @@ class AthenaDialect(DefaultDialect):
 
     def create_connect_args(self, url):
         # Connection string format:
-        #   awsathena+jdbc://
+        #   jdbc:qubole//
         #   {access_key}:{secret_key}@athena.{region_name}.amazonaws.com:443/
         #   {schema_name}?s3_staging_dir={s3_staging_dir}&driver_path={driver_path}&...
         opts = {
